@@ -27,15 +27,33 @@ const normalizeRoomPayload = (roomData = {}) => {
       ? roomData.amenities.split(',').map((item) => item.trim()).filter(Boolean)
       : []
 
-  return {
+  // Strip assignedStaff down to { user, role } pairs the backend expects
+  const assignedStaff = Array.isArray(roomData.assignedStaff)
+    ? roomData.assignedStaff
+        .filter((entry) => entry?.user && entry?.role)
+        .map((entry) => ({
+          user: typeof entry.user === 'object' ? entry.user._id : entry.user,
+          role: entry.role
+        }))
+    : undefined
+
+  const payload = {
     ...roomData,
     capacity: Number(roomData.capacity ?? 1),
     currentOccupancy: Number(roomData.currentOccupancy ?? 0),
     amenities,
   }
+
+  if (assignedStaff) {
+    payload.assignedStaff = assignedStaff
+  } else {
+    delete payload.assignedStaff
+  }
+
+  return payload
 }
 
-// Create new room
+// Create new room (admin can include assignedStaff in the payload)
 export const createRoom = async (roomData) => {
   try {
     const formattedData = normalizeRoomPayload(roomData)
@@ -46,14 +64,35 @@ export const createRoom = async (roomData) => {
   }
 }
 
-// Update room
+// Update room (general fields only — does NOT touch assignedStaff)
 export const updateRoom = async (id, roomData) => {
   try {
     const formattedData = normalizeRoomPayload(roomData)
+    delete formattedData.assignedStaff
     const response = await api.put(`/rooms/${id}`, formattedData)
     return response.data
   } catch (error) {
     throw error.response?.data || { message: error.message || 'Failed to update room' }
+  }
+}
+
+// Assign/replace staff on an existing room — admin only, hits the
+// dedicated PUT /rooms/:id/assign-staff endpoint
+export const assignRoomStaff = async (id, assignedStaff) => {
+  try {
+    const cleaned = (assignedStaff || [])
+      .filter((entry) => entry?.user && entry?.role)
+      .map((entry) => ({
+        user: typeof entry.user === 'object' ? entry.user._id : entry.user,
+        role: entry.role
+      }))
+
+    const response = await api.put(`/rooms/${id}/assign-staff`, {
+      assignedStaff: cleaned
+    })
+    return response.data
+  } catch (error) {
+    throw error.response?.data || { message: error.message || 'Failed to assign staff' }
   }
 }
 
