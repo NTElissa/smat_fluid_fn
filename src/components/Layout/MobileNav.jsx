@@ -1,16 +1,22 @@
 import { NavLink } from 'react-router-dom'
-import { 
+import {
   HiOutlineHome,
   HiOutlineUsers,
-  HiOutlineChip, // Changed from HiOutlineCpuChip
-  HiOutlineBell 
-} from 'react-icons/hi' // Changed from hi2 to hi
+  HiOutlineChip,
+  HiOutlineBell,
+  HiOutlineClipboardList,
+  HiOutlineCog,
+  HiOutlineQuestionMarkCircle,
+  HiOfficeBuilding
+} from 'react-icons/hi'
 
 const MobileNav = () => {
   const navItems = [
     { to: '/dashboard', icon: HiOutlineHome, label: 'Home' },
     { to: '/patients', icon: HiOutlineUsers, label: 'Patients' },
+    { to: '/rooms', icon: HiOfficeBuilding, label: 'Rooms' },
     { to: '/monitors', icon: HiOutlineChip, label: 'Monitors' },
+    { to: '/tasks', icon: HiOutlineClipboardList, label: 'Tasks' },
     { to: '/alerts', icon: HiOutlineBell, label: 'Alerts' },
   ]
 

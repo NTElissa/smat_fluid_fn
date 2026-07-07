@@ -1,14 +1,16 @@
 // src/components/Monitors/MonitorCard.jsx
-import React from 'react'
+import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { 
   HiOutlineEye,
-  HiOutlineLightningBolt, // Changed from HiOutlineBolt
-  HiOutlineExclamation 
+  HiOutlineLightningBolt,
 } from 'react-icons/hi'
+import { requestBagChange } from '../../services/monitorService'
 import LevelIndicator from './LevelIndicator'
+import toast from 'react-hot-toast'
 
 const MonitorCard = ({ monitor, onRefresh }) => {
+  const [requesting, setRequesting] = useState(false)
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800'
@@ -26,6 +28,20 @@ const MonitorCard = ({ monitor, onRefresh }) => {
       case 'paused': return 'Paused'
       case 'completed': return 'Completed'
       default: return status
+    }
+  }
+
+  const handleBagChange = async (e) => {
+    e.preventDefault()
+    try {
+      setRequesting(true)
+      await requestBagChange(monitor._id, 'Low fluid level — bag change needed')
+      toast.success('Bag change request sent to support staff')
+      onRefresh?.()
+    } catch {
+      toast.error('Failed to send bag change request')
+    } finally {
+      setRequesting(false)
     }
   }
 
@@ -86,8 +102,9 @@ const MonitorCard = ({ monitor, onRefresh }) => {
         </Link>
         {monitor.status === 'active' && monitor.currentLevel <= 20 && (
           <button
-            onClick={() => onRefresh?.(monitor._id)}
-            className="px-3 py-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 transition-colors"
+            onClick={handleBagChange}
+            disabled={requesting}
+            className="px-3 py-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 transition-colors disabled:opacity-50"
             title="Request bag change"
           >
             <HiOutlineLightningBolt className="w-4 h-4" />

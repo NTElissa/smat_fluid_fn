@@ -10,6 +10,8 @@ import PatientsPage from './pages/PatientsPage'
 import MonitorsPage from './pages/MonitorsPage'
 import AlertsPage from './pages/AlertsPage'
 import SettingsPage from './pages/SettingsPage'
+import MonitorDetail from './components/Monitors/MonitorDetail'
+import TasksPage from './pages/TasksPage'
 import PrivateRoute from './components/Auth/PrivateRoute'
 import Spinner from './components/Common/Spinner'
 
@@ -37,6 +39,8 @@ function App() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="patients" element={<PatientsPage />} />
           <Route path="monitors" element={<MonitorsPage />} />
+          <Route path="monitors/:id" element={<MonitorDetail />} />
+          <Route path="tasks" element={<TasksPage />} />
           <Route path="alerts" element={<AlertsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>

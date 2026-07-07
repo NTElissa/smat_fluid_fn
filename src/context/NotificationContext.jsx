@@ -1,7 +1,7 @@
 // src/context/NotificationContext.jsx - UPDATED WITH DEBOUNCE
 import React, { createContext, useState, useEffect, useCallback, useRef } from 'react'
 import { useSocket } from '../hooks/useSocket'
-import { getNotifications, markAsRead } from '../services/notificationService'
+import { getNotifications, markAsRead, markAllAsRead as markAllNotificationsRead } from '../services/notificationService'
 import toast from 'react-hot-toast'
 import { useAuth } from '../hooks/useAuth'
 
@@ -135,8 +135,7 @@ export const NotificationProvider = ({ children }) => {
 
   const markAllAsRead = async () => {
     try {
-      // You'll need to add this endpoint to your backend
-      await markAllAsRead()
+      await markAllNotificationsRead()
       setNotifications(prev =>
         prev.map(n => ({ ...n, isRead: true, readAt: new Date() }))
       )

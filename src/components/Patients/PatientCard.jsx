@@ -1,18 +1,18 @@
 import { useState } from 'react'
 import { 
-  HiOutlineIdentification,
-  HiOutlineHome,
-  HiOutlineBeaker,
-  HiOutlineEye,
-  HiOutlinePencil,
-  HiOutlineTrash,
-  HiOutlineClock,
-  HiOutlineBuildingOffice, // Valid in hi2
-  HiOutlineMapPin, // Valid in hi2 (use this instead of LocationMarker)
-  HiOutlineHeart,
-  HiOutlineUser
-} from 'react-icons/hi2' // All icons here are valid in hi2
-import { formatDate, formatTimeAgo } from '../../utils/formatters'
+  HiIdentification,
+  HiHome,
+  HiBeaker,
+  HiEye,
+  HiPencil,
+  HiTrash,
+  HiClock,
+  HiBuildingOffice2,
+  HiMapPin,
+  HiHeart,
+  HiUser
+} from 'react-icons/hi2'
+import { formatTimeAgo } from '../../utils/formatters'
 import Modal from '../Common/Modal'
 import PatientDetail from './PatientDetail'
 import PatientForm from './PatientForm'
@@ -59,15 +59,14 @@ const PatientCard = ({ patient, onUpdate, onDelete }) => {
       await onDelete(patient._id)
       toast.success('Patient deleted successfully')
       setShowDeleteConfirm(false)
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete patient')
     }
   }
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden group border border-gray-100">
-        {/* Header with color accent based on status */}
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-900">
         <div className={`h-2 ${
           patient.status === 'admitted' ? 'bg-green-500' :
           patient.status === 'discharged' ? 'bg-gray-500' :
@@ -78,8 +77,8 @@ const PatientCard = ({ patient, onUpdate, onDelete }) => {
         <div className="p-5">
           {/* Patient ID and Status */}
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center space-x-2 text-sm text-gray-500">
-              <HiOutlineIdentification className="w-4 h-4" />
+            <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-slate-400">
+              <HiIdentification className="w-4 h-4" />
               <span className="font-mono text-xs">{patient.patientId || 'N/A'}</span>
             </div>
             <span className={`px-2 py-1 rounded-full text-xs font-medium border flex items-center space-x-1 ${getStatusColor(patient.status)}`}>
@@ -100,19 +99,19 @@ const PatientCard = ({ patient, onUpdate, onDelete }) => {
             </div>
             
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 truncate">
+              <h3 className="truncate font-semibold text-gray-900 dark:text-slate-100">
                 {patient.firstName} {patient.lastName}
               </h3>
-              <div className="flex items-center space-x-2 text-xs text-gray-500 mt-1">
+              <div className="mt-1 flex items-center space-x-2 text-xs text-gray-500 dark:text-slate-400">
                 <span className="flex items-center space-x-1">
-                  <HiOutlineClock className="w-3 h-3" />
+                  <HiClock className="w-3 h-3" />
                   <span>{formatTimeAgo(patient.admissionDate)}</span>
                 </span>
                 {patient.ward && (
                   <>
                     <span>•</span>
                     <span className="flex items-center space-x-1">
-                      <HiOutlineHome className="w-3 h-3" />
+                      <HiHome className="w-3 h-3" />
                       <span>{patient.ward}</span>
                     </span>
                   </>
@@ -124,18 +123,18 @@ const PatientCard = ({ patient, onUpdate, onDelete }) => {
           {/* Location and Diagnosis */}
           <div className="mt-3 space-y-2">
             {(patient.room || patient.bed) && (
-              <div className="flex items-center space-x-2 text-xs bg-gray-50 p-2 rounded-lg">
-                <HiOutlineBuildingOffice className="w-3 h-3 text-gray-500" />
-                <span className="text-gray-600">
+              <div className="flex items-center space-x-2 rounded-lg bg-gray-50 p-2 text-xs dark:bg-slate-800">
+                <HiBuildingOffice2 className="w-3 h-3 text-gray-500" />
+                <span className="text-gray-600 dark:text-slate-300">
                   Room {patient.room || '—'} • Bed {patient.bed || '—'}
                 </span>
               </div>
             )}
             
             {patient.diagnosis && (
-              <div className="flex items-start space-x-2 text-xs bg-blue-50 p-2 rounded-lg">
-                <HiOutlineBeaker className="w-3 h-3 text-blue-500 mt-0.5" />
-                <span className="text-blue-700 line-clamp-2">{patient.diagnosis}</span>
+              <div className="flex items-start space-x-2 rounded-lg bg-blue-50 p-2 text-xs dark:bg-slate-800">
+                <HiBeaker className="w-3 h-3 text-blue-500 mt-0.5" />
+                <span className="line-clamp-2 text-blue-700 dark:text-blue-300">{patient.diagnosis}</span>
               </div>
             )}
           </div>
@@ -158,29 +157,29 @@ const PatientCard = ({ patient, onUpdate, onDelete }) => {
           )}
 
           {/* Action Buttons */}
-          <div className="mt-4 flex items-center justify-between pt-3 border-t border-gray-100">
+          <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 dark:border-slate-700">
             <button
               onClick={() => setShowDetail(true)}
-              className="flex items-center space-x-1 text-sm text-primary-600 hover:text-primary-700 transition-colors"
+              className="flex items-center space-x-1 text-sm text-primary-600 transition-colors hover:text-primary-700 dark:text-primary-400"
             >
-              <HiOutlineEye className="w-4 h-4" />
+              <HiEye className="w-4 h-4" />
               <span>View Details</span>
             </button>
             
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => setShowEdit(true)}
-                className="p-1.5 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-primary-50 hover:text-primary-600 dark:text-slate-400 dark:hover:bg-slate-800"
                 title="Edit Patient"
               >
-                <HiOutlinePencil className="w-4 h-4" />
+                <HiPencil className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-slate-800"
                 title="Delete Patient"
               >
-                <HiOutlineTrash className="w-4 h-4" />
+                <HiTrash className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -224,7 +223,7 @@ const PatientCard = ({ patient, onUpdate, onDelete }) => {
       >
         <div className="text-center">
           <div className="w-20 h-20 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-            <HiOutlineTrash className="w-10 h-10 text-red-600" />
+            <HiTrash className="w-10 h-10 text-red-600" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             Delete Patient?

@@ -49,8 +49,9 @@ const PatientsPage = () => {
     try {
       setLoading(true)
       const response = await getPatients()
-      setPatients(response.data || [])
-      setFilteredPatients(response.data || [])
+      const patientData = response.data || []
+      setPatients(patientData)
+      setFilteredPatients(patientData)
     } catch (error) {
       toast.error('Failed to load patients')
       console.error('Error loading patients:', error)
@@ -117,9 +118,9 @@ const PatientsPage = () => {
   }
 
   return (
-    <div className="space-y-6 pb-20 lg:pb-6 bg-gray-50/40">
+    <div className="space-y-6 bg-gray-50/40 pb-20 dark:bg-slate-950/60 lg:pb-6">
       {/* Header with Stats – softer gradient, modern teal-blue */}
-      <div className="bg-gradient-to-br from-teal-600 to-cyan-700 rounded-2xl p-6 md:p-8 text-white shadow-xl shadow-teal-900/20">
+      <div className="rounded-2xl bg-gradient-to-br from-teal-600 to-cyan-700 p-6 text-white shadow-xl shadow-teal-900/20 md:p-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Patients</h1>
@@ -162,7 +163,7 @@ const PatientsPage = () => {
       </div>
 
       {/* Search and Filter Bar – cleaner, elevated look */}
-      <div className="bg-white rounded-2xl shadow border border-gray-200/70 p-5">
+      <div className="rounded-2xl border border-gray-200/70 bg-white p-5 shadow dark:border-slate-700 dark:bg-slate-900">
         <div className="flex flex-col lg:flex-row gap-4 items-stretch">
           {/* Search */}
           <div className="flex-1 relative">
@@ -317,7 +318,7 @@ const PatientsPage = () => {
       </div>
 
       {/* Results count */}
-      <div className="flex items-center justify-between text-sm text-gray-600">
+      <div className="flex items-center justify-between text-sm text-gray-600 dark:text-slate-400">
         <p>
           Showing <span className="font-semibold text-gray-900">{filteredPatients.length}</span> of{' '}
           <span className="font-semibold text-gray-900">{patients.length}</span> patients
@@ -334,25 +335,14 @@ const PatientsPage = () => {
 
       {/* Patients content */}
       {filteredPatients.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100">
+        <div className="rounded-2xl border border-gray-100 bg-white py-16 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
           <div className="text-7xl mb-5 opacity-70">🏥</div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-3">No patients found</h3>
-          <p className="text-gray-600 max-w-md mx-auto">
+          <h3 className="mb-3 text-xl font-semibold text-gray-800 dark:text-slate-100">No patients found</h3>
+          <p className="mx-auto max-w-md text-gray-600 dark:text-slate-400">
             {searchTerm || filters.ward !== 'all' || filters.status !== 'all' || filters.gender !== 'all'
               ? 'Try adjusting your filters or search term'
               : 'Start by adding your first patient record'}
           </p>
-          {!searchTerm && filters.ward === 'all' && filters.status === 'all' && filters.gender === 'all' && (
-            <Button
-              variant="primary"
-              size="lg"
-              className="mt-6"
-              onClick={() => setShowAddModal(true)}
-            >
-              <HiOutlinePlus className="w-5 h-5" />
-              Add Patient
-            </Button>
-          )}
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -366,7 +356,7 @@ const PatientsPage = () => {
           ))}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden">
+        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
           <table className="min-w-full divide-y divide-gray-100">
             <thead className="bg-gray-50/70">
               <tr>

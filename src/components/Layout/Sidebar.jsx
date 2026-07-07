@@ -1,18 +1,22 @@
 import { NavLink } from 'react-router-dom'
-import { 
+import {
   HiOutlineHome,
   HiOutlineUsers,
-  HiOutlineChip, // Changed from HiOutlineCpuChip
+  HiOutlineChip,
   HiOutlineBell,
+  HiOutlineClipboardList,
   HiOutlineCog,
-  HiOutlineQuestionMarkCircle
-} from 'react-icons/hi' // Changed from hi2 to hi
+  HiOutlineQuestionMarkCircle,
+  HiOfficeBuilding
+} from 'react-icons/hi'
 
 const Sidebar = ({ closeSidebar }) => {
   const navItems = [
     { to: '/dashboard', icon: HiOutlineHome, label: 'Dashboard' },
     { to: '/patients', icon: HiOutlineUsers, label: 'Patients' },
+    { to: '/rooms', icon: HiOfficeBuilding, label: 'Rooms' },
     { to: '/monitors', icon: HiOutlineChip, label: 'IV Monitors' },
+    { to: '/tasks', icon: HiOutlineClipboardList, label: 'Tasks' },
     { to: '/alerts', icon: HiOutlineBell, label: 'Alerts' },
     { to: '/settings', icon: HiOutlineCog, label: 'Settings' },
   ]

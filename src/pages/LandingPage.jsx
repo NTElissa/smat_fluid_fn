@@ -103,7 +103,7 @@ const LandingPage = () => {
           <div>
             <div className="inline-flex items-center gap-2 text-indigo-700 mb-5 text-sm font-medium">
               <FaMapMarkerAlt className="w-4 h-4" />
-              <span>Kigali, Rwanda — Built for Rwandan Hospitals</span>
+              {/* <span>Southern Province, Rwanda </span> */}
             </div>
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
@@ -134,7 +134,7 @@ const LandingPage = () => {
             <div className="flex flex-wrap gap-6 mt-10 text-sm text-gray-600">
               <div className="flex items-center gap-2">
                 <HiOutlineAcademicCap className="w-5 h-5 text-indigo-600" />
-                <span>University of Kigali Research</span>
+                {/* <span>Remera Rukoma Hospital Research</span> */}
               </div>
               <div className="flex items-center gap-2">
                 <HiOutlineCheckCircle className="w-5 h-5 text-green-600" />
@@ -261,7 +261,7 @@ const LandingPage = () => {
               <span className="text-white font-semibold text-lg">Smart IV Monitor</span>
             </div>
             <p className="text-sm">
-              IoT-based IV monitoring system developed from University of Kigali research — making IV therapy safer across Rwanda.
+              Smart IV monitoring system for  Hospital — making IV therapy safer across Rwanda.
             </p>
           </div>
 
@@ -288,13 +288,13 @@ const LandingPage = () => {
             <ul className="space-y-3 text-sm">
               <li>info@smartiv.rw</li>
               <li>+250 788 183 209 2</li>
-              <li>Kigali, Rwanda</li>
+              <li>Remera Rukoma Hospital, Rwanda</li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-gray-800 mt-12 pt-8 text-center text-sm">
-          © {new Date().getFullYear()} Smart IV Monitoring System — University of Kigali Research Project
+          © {new Date().getFullYear()} SMAT Fluid — Smart IV Monitoring System —  Hospital
         </div>
       </footer>
     </div>

@@ -11,17 +11,45 @@ const MonitorForm = ({ onSuccess, onCancel }) => {
   const [patients, setPatients] = useState([])
   const [loading, setLoading] = useState(false)
   const [loadingPatients, setLoadingPatients] = useState(true)
-  const { register, handleSubmit, formState: { errors } } = useForm()
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
+    defaultValues: {
+      deviceId: '',
+      patientId: '',
+      fluidType: '',
+      fluidVolume: '',
+      flowRate: '',
+      ward: '',
+      room: '',
+      bed: ''
+    }
+  })
+  const selectedPatientId = watch('patientId')
 
   useEffect(() => {
     loadPatients()
   }, [])
 
+  useEffect(() => {
+    if (!selectedPatientId) {
+      setValue('ward', '')
+      setValue('room', '')
+      setValue('bed', '')
+      return
+    }
+
+    const selectedPatient = patients.find((patient) => patient._id === selectedPatientId)
+    if (selectedPatient) {
+      setValue('ward', selectedPatient.ward || '')
+      setValue('room', selectedPatient.room || '')
+      setValue('bed', selectedPatient.bed || '')
+    }
+  }, [selectedPatientId, patients, setValue])
+
   const loadPatients = async () => {
     try {
       setLoadingPatients(true)
       const response = await getPatients({ status: 'admitted' })
-      setPatients(response.data.data || [])
+      setPatients(response.data || [])
     } catch (error) {
       toast.error('Failed to load patients')
     } finally {
@@ -91,6 +119,7 @@ const MonitorForm = ({ onSuccess, onCancel }) => {
         {errors.patientId && (
           <p className="text-sm text-red-600">{errors.patientId.message}</p>
         )}
+        <p className="text-xs text-gray-500">The selected patient&apos;s room and bed will be used automatically when available.</p>
       </div>
 
       {/* Fluid Type */}
@@ -145,19 +174,19 @@ const MonitorForm = ({ onSuccess, onCancel }) => {
           label="Ward"
           placeholder="Ward A"
           error={errors.ward?.message}
-          {...register('ward', { required: 'Ward is required' })}
+          {...register('ward')}
         />
         <Input
           label="Room"
           placeholder="101"
           error={errors.room?.message}
-          {...register('room', { required: 'Room is required' })}
+          {...register('room')}
         />
         <Input
           label="Bed"
           placeholder="B"
           error={errors.bed?.message}
-          {...register('bed', { required: 'Bed is required' })}
+          {...register('bed')}
         />
       </div>
 

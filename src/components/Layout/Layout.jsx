@@ -8,6 +8,10 @@ import MobileNav from './MobileNav'
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  })
 
   useEffect(() => {
     const handleResize = () => {
@@ -21,17 +25,24 @@ const Layout = () => {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode)
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light')
+  }, [darkMode])
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
       <Header 
         toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
         isMobile={isMobile}
+        darkMode={darkMode}
+        toggleTheme={() => setDarkMode(!darkMode)}
       />
       
       <div className="flex">
         {/* Desktop Sidebar */}
         {!isMobile && (
-          <aside className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white border-r border-gray-200 overflow-y-auto">
+          <aside className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 overflow-y-auto border-r border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-900">
             <Sidebar />
           </aside>
         )}

@@ -1,15 +1,16 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    './index.html',
+    './src/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {
       colors: {
         'medical-blue': '#3B82F6',
-      'medical-teal': '#0D9488',
-      'medical-red':  '#EF4444',
+        'medical-teal': '#0D9488',
+        'medical-red': '#EF4444',
         primary: {
           50: '#f0f9ff',
           100: '#e0f2fe',

@@ -1,3 +1,4 @@
+// AppRouter.js
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import LoginPage from '../pages/LoginPage'
@@ -8,6 +9,8 @@ import MonitorsPage from '../pages/MonitorsPage'
 import MonitorDetail from '../components/Monitors/MonitorDetail'
 import AlertsPage from '../pages/AlertsPage'
 import SettingsPage from '../pages/SettingsPage'
+import RoomsPage from '../pages/RoomsPage'
+import RoomDetail from '../components/Rooms/RoomDetail'
 import Layout from '../components/Layout/Layout'
 
 const PrivateRoute = ({ children }) => {
@@ -24,6 +27,8 @@ const AppRouter = () => {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="patients" element={<PatientsPage />} />
         <Route path="patients/:id" element={<PatientDetail />} />
+        <Route path="rooms" element={<RoomsPage />} />
+        <Route path="rooms/:id" element={<RoomDetail />} />
         <Route path="monitors" element={<MonitorsPage />} />
         <Route path="monitors/:id" element={<MonitorDetail />} />
         <Route path="alerts" element={<AlertsPage />} />

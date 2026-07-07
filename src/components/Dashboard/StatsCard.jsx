@@ -1,6 +1,6 @@
 import { HiOutlineArrowUp, HiOutlineArrowDown } from 'react-icons/hi'
 
-const StatsCard = ({ title, value, icon: Icon, trend, color = 'primary' }) => {
+const StatsCard = ({ title, value, icon: Icon, trend, color = 'primary', subtitle }) => {
   const colors = {
     primary: 'bg-primary-50 text-primary-600',
     success: 'bg-green-50 text-green-600',
@@ -30,6 +30,7 @@ const StatsCard = ({ title, value, icon: Icon, trend, color = 'primary' }) => {
       </div>
       <h3 className="text-2xl font-bold text-gray-900 mb-1">{value}</h3>
       <p className="text-sm text-gray-600">{title}</p>
+      {subtitle && <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>}
     </div>
   )
 }
