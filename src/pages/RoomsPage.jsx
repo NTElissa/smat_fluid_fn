@@ -29,6 +29,7 @@ const RoomsPage = () => {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [viewMode, setViewMode] = useState('grid')
   const [selectedRoom, setSelectedRoom] = useState(null)
@@ -114,6 +115,11 @@ const RoomsPage = () => {
     setShowEditModal(true)
   }
 
+  const openDetailRoom = (room) => {
+    setSelectedRoom(room)
+    setShowDetailModal(true)
+  }
+
   const openDeleteRoom = (room) => {
     setSelectedRoom(room)
     setShowDeleteModal(true)
@@ -122,6 +128,7 @@ const RoomsPage = () => {
   const handleRoomSuccess = () => {
     setShowAddModal(false)
     setShowEditModal(false)
+    setShowDetailModal(false)
     setSelectedRoom(null)
     loadRooms()
   }
@@ -131,6 +138,7 @@ const RoomsPage = () => {
       await deleteRoom(id)
       toast.success('Room deleted successfully')
       setShowDeleteModal(false)
+      setShowDetailModal(false)
       setSelectedRoom(null)
       loadRooms()
     } catch (error) {
@@ -402,17 +410,7 @@ const RoomsPage = () => {
               ? 'Try adjusting your filters or search term'
               : 'Start by adding your first room'}
           </p>
-          {!searchTerm && filters.ward === 'all' && filters.status === 'all' && filters.type === 'all' && (
-            <Button
-              variant="primary"
-              size="lg"
-              className="mt-6"
-              onClick={openAddRoom}
-            >
-              <HiOutlinePlus className="w-5 h-5" />
-              Add Room
-            </Button>
-          )}
+    
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">

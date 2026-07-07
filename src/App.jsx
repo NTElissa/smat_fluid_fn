@@ -14,6 +14,8 @@ import MonitorDetail from './components/Monitors/MonitorDetail'
 import TasksPage from './pages/TasksPage'
 import PrivateRoute from './components/Auth/PrivateRoute'
 import Spinner from './components/Common/Spinner'
+import RoomsPage from './pages/RoomsPage'
+// import ErrorBoundary from './components/ErrorBoundary' // Add this import
 
 function App() {
   const { isLoading } = useAuth()
@@ -43,6 +45,15 @@ function App() {
           <Route path="tasks" element={<TasksPage />} />
           <Route path="alerts" element={<AlertsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="rooms" element={<RoomsPage />} />
+          {/* <Route 
+            path="rooms" 
+            element={
+              <ErrorBoundary>
+                <RoomsPage />
+              </ErrorBoundary>
+            } 
+          /> */}
         </Route>
       </Route>
       
