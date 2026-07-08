@@ -1,56 +1,73 @@
-// pages/RoomsPage.js
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import {
-  HiOutlineMagnifyingGlass,
-  HiOutlinePlus,
-  HiOutlineAdjustmentsHorizontal,
-  HiOutlineViewColumns,
-  HiOutlineBars3,
-  HiOutlineChevronDown,
-  HiOutlineArrowPath,
-  HiOutlineXMark
-} from 'react-icons/hi2'
+// pages/RoomsPage.jsx
+import { useState, useEffect, useContext } from 'react'
+import { AuthContext } from '../context/AuthContext'
+import { getRooms, deleteRoom } from '../services/roomService'
 import RoomCard from '../components/Rooms/RoomCard'
 import RoomForm from '../components/Rooms/RoomForm'
-import { getRooms, deleteRoom } from '../services/roomService'
+import RoomDetail from '../components/Rooms/RoomDetail'
 import Spinner from '../components/Common/Spinner'
-import Modal from '../components/Common/Modal'
-import Button from '../components/Common/Button'
 import toast from 'react-hot-toast'
+import {
+  HiOutlinePlus,
+  HiOutlineMagnifyingGlass,
+  HiOutlineFunnel,
+  HiOutlineXMark,
+  HiOutlineBuildingOffice2,
+  HiOutlineHomeModern,
+  HiOutlineCheckCircle,
+  HiOutlineUserGroup,
+  HiOutlineWrenchScrewdriver,
+  HiOutlineClock,
+  HiOutlineViewColumns,
+  HiOutlineListBullet,
+  HiOutlineArrowPath
+} from 'react-icons/hi2'
 
 const RoomsPage = () => {
-  const navigate = useNavigate()
+  const { user } = useContext(AuthContext)
+  // eslint-disable-next-line no-unused-vars
+  const isAdmin = user?.role === 'admin'
+
   const [rooms, setRooms] = useState([])
   const [filteredRooms, setFilteredRooms] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  
+  // UI states
   const [searchTerm, setSearchTerm] = useState('')
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [showDetailModal, setShowDetailModal] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [viewMode, setViewMode] = useState('grid')
+  
+  // Modal states
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDetailModal, setShowDetailModal] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [selectedRoom, setSelectedRoom] = useState(null)
-
+  
+  // Filter states
   const [filters, setFilters] = useState({
-    ward: 'all',
-    status: 'all',
-    type: 'all'
+    ward: '',
+    status: '',
+    type: '',
+    floor: ''
   })
 
-  // Get unique values for filters
-  const wards = ['all', ...new Set(rooms.map(r => r.ward).filter(Boolean))]
-  const statuses = ['all', 'available', 'occupied', 'maintenance', 'reserved']
-  const types = ['all', 'general', 'icu', 'maternity', 'pediatric', 'surgery']
+  // Statistics
+  const [stats, setStats] = useState({
+    total: 0,
+    available: 0,
+    occupied: 0,
+    maintenance: 0,
+    reserved: 0
+  })
 
   useEffect(() => {
     loadRooms()
   }, [])
 
   useEffect(() => {
-    filterRooms()
+    applyFilters()
   }, [searchTerm, filters, rooms])
 
   const loadRooms = async () => {
@@ -59,21 +76,12 @@ const RoomsPage = () => {
       setError(null)
       
       const response = await getRooms()
+      const roomData = response?.data || response || []
+      const roomsArray = Array.isArray(roomData) ? roomData : []
       
-      // Handle different response structures
-      let roomData = []
-      if (Array.isArray(response)) {
-        roomData = response
-      } else if (response?.data && Array.isArray(response.data)) {
-        roomData = response.data
-      } else if (response?.rooms && Array.isArray(response.rooms)) {
-        roomData = response.rooms
-      } else {
-        roomData = []
-      }
-      
-      setRooms(roomData)
-      setFilteredRooms(roomData)
+      setRooms(roomsArray)
+      setFilteredRooms(roomsArray)
+      calculateStats(roomsArray)
     } catch (err) {
       setError(err.message || 'Failed to load rooms')
       toast.error('Failed to load rooms')
@@ -84,536 +92,554 @@ const RoomsPage = () => {
     }
   }
 
-  const filterRooms = () => {
-    let filtered = rooms
-    if (searchTerm) {
+  const calculateStats = (roomsData) => {
+    setStats({
+      total: roomsData.length,
+      available: roomsData.filter(r => r.status === 'available').length,
+      occupied: roomsData.filter(r => r.status === 'occupied').length,
+      maintenance: roomsData.filter(r => r.status === 'maintenance').length,
+      reserved: roomsData.filter(r => r.status === 'reserved').length
+    })
+  }
+
+  const applyFilters = () => {
+    let filtered = [...rooms]
+    
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase()
       filtered = filtered.filter(room =>
-        room.roomNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        room.ward?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        room.floor?.toLowerCase().includes(searchTerm.toLowerCase())
+        room.roomNumber?.toLowerCase().includes(term) ||
+        room.ward?.toLowerCase().includes(term) ||
+        room.floor?.toLowerCase().includes(term) ||
+        room.type?.toLowerCase().includes(term)
       )
     }
-    if (filters.ward !== 'all') {
-      filtered = filtered.filter(room => room.ward === filters.ward)
-    }
-    if (filters.status !== 'all') {
-      filtered = filtered.filter(room => room.status === filters.status)
-    }
-    if (filters.type !== 'all') {
-      filtered = filtered.filter(room => room.type === filters.type)
-    }
+    
+    if (filters.ward) filtered = filtered.filter(r => r.ward === filters.ward)
+    if (filters.status) filtered = filtered.filter(r => r.status === filters.status)
+    if (filters.type) filtered = filtered.filter(r => r.type === filters.type)
+    if (filters.floor) filtered = filtered.filter(r => r.floor === filters.floor)
+    
     setFilteredRooms(filtered)
   }
 
-  const openAddRoom = () => {
+  const handleAddRoom = () => {
     setSelectedRoom(null)
     setShowAddModal(true)
   }
 
-  const openEditRoom = (room) => {
+  const handleEditRoom = (room) => {
     setSelectedRoom(room)
     setShowEditModal(true)
   }
 
-  const openDetailRoom = (room) => {
+  const handleViewRoom = (room) => {
     setSelectedRoom(room)
     setShowDetailModal(true)
   }
 
-  const openDeleteRoom = (room) => {
+  const handleDeleteClick = (room) => {
     setSelectedRoom(room)
-    setShowDeleteModal(true)
+    setShowDeleteConfirm(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedRoom?._id) return
+    
+    try {
+      await deleteRoom(selectedRoom._id)
+      toast.success('Room deleted successfully')
+      setShowDeleteConfirm(false)
+      setSelectedRoom(null)
+      loadRooms()
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete room')
+    }
   }
 
   const handleRoomSuccess = () => {
     setShowAddModal(false)
     setShowEditModal(false)
-    setShowDetailModal(false)
     setSelectedRoom(null)
     loadRooms()
   }
 
-  const handleDeleteRoom = async (id) => {
-    try {
-      await deleteRoom(id)
-      toast.success('Room deleted successfully')
-      setShowDeleteModal(false)
-      setShowDetailModal(false)
-      setSelectedRoom(null)
-      loadRooms()
-    } catch (error) {
-      toast.error(error?.message || 'Failed to delete room')
-    }
-  }
-
   const clearFilters = () => {
-    setFilters({
-      ward: 'all',
-      status: 'all',
-      type: 'all'
-    })
+    setFilters({ ward: '', status: '', type: '', floor: '' })
     setSearchTerm('')
   }
 
-  // Stats for the header
-  const stats = {
-    total: rooms.length,
-    available: rooms.filter(r => r.status === 'available').length,
-    occupied: rooms.filter(r => r.status === 'occupied').length,
-    maintenance: rooms.filter(r => r.status === 'maintenance').length
-  }
+  const hasActiveFilters = filters.ward || filters.status || filters.type || filters.floor || searchTerm
 
-  // Loading state
+  // Get unique values for filter dropdowns
+  const uniqueWards = [...new Set(rooms.map(r => r.ward).filter(Boolean))]
+  const uniqueFloors = [...new Set(rooms.map(r => r.floor).filter(Boolean))]
+  const roomTypes = ['general', 'icu', 'maternity', 'pediatric', 'surgery']
+  const roomStatuses = ['available', 'occupied', 'maintenance', 'reserved']
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-slate-900">
         <div className="text-center">
-          <Spinner size="lg" />
-          <p className="mt-4 text-gray-600">Loading rooms...</p>
+          <div className="relative">
+            <Spinner size="xl" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <HiOutlineHomeModern className="w-8 h-8 text-indigo-500 animate-pulse" />
+            </div>
+          </div>
+          <p className="mt-6 text-slate-600 dark:text-slate-400 font-medium">Loading rooms...</p>
         </div>
       </div>
     )
   }
 
-  // Error state
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <div className="text-6xl mb-4">⚠️</div>
-        <h2 className="text-2xl font-semibold text-gray-800 mb-2">Something went wrong</h2>
-        <p className="text-gray-600 mb-4">{error}</p>
-        <Button onClick={loadRooms} variant="primary">
-          Try Again
-        </Button>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-slate-900">
+        <div className="text-center max-w-md">
+          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+            <HiOutlineXMark className="w-12 h-12 text-red-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2">Failed to Load Rooms</h2>
+          <p className="text-slate-600 dark:text-slate-400 mb-6">{error}</p>
+          <button
+            onClick={loadRooms}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors font-medium"
+          >
+            <HiOutlineArrowPath className="w-5 h-5" />
+            Try Again
+          </button>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 bg-gray-50/40 pb-20 dark:bg-slate-950/60 lg:pb-6">
-      {/* Header with Stats */}
-      <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 p-6 text-white shadow-xl shadow-indigo-900/20 md:p-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Rooms</h1>
-            <p className="text-indigo-100/90 mt-1.5 text-lg">Room management and occupancy tracking</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                <span className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center">
+                  <HiOutlineBuildingOffice2 className="w-6 h-6 text-white" />
+                </span>
+                Room Management
+              </h1>
+              <p className="mt-2 text-slate-600 dark:text-slate-400">
+                Manage hospital rooms, occupancy, and staff assignments
+              </p>
+            </div>
+            <button
+              onClick={handleAddRoom}
+              className="inline-flex items-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all transform hover:scale-105 shadow-lg shadow-indigo-600/25 font-medium"
+            >
+              <HiOutlinePlus className="w-5 h-5" />
+              Add New Room
+            </button>
           </div>
-          <Button
-            variant="white"
-            size="lg"
-            onClick={openAddRoom}
-            className="shadow-lg shadow-indigo-950/30 hover:shadow-indigo-950/40 transition-shadow"
-          >
-            <HiOutlinePlus className="w-5 h-5" />
-            <span>Add Room</span>
-          </Button>
-        </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-8">
-          <div className="bg-white/15 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-            <p className="text-indigo-100/80 text-sm font-medium">Total</p>
-            <p className="text-3xl font-bold mt-1">{stats.total}</p>
-          </div>
-          <div className="bg-white/15 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-            <p className="text-indigo-100/80 text-sm font-medium">Available</p>
-            <p className="text-3xl font-bold mt-1 text-green-300">{stats.available}</p>
-          </div>
-          <div className="bg-white/15 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-            <p className="text-indigo-100/80 text-sm font-medium">Occupied</p>
-            <p className="text-3xl font-bold mt-1 text-blue-300">{stats.occupied}</p>
-          </div>
-          <div className="bg-white/15 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-            <p className="text-indigo-100/80 text-sm font-medium">Maintenance</p>
-            <p className="text-3xl font-bold mt-1 text-yellow-300">{stats.maintenance}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Search and Filter Bar */}
-      <div className="rounded-2xl border border-gray-200/70 bg-white p-5 shadow dark:border-slate-700 dark:bg-slate-900">
-        <div className="flex flex-col lg:flex-row gap-4 items-stretch">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <HiOutlineMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by room number, ward..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-5 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all"
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <StatsCard
+              icon={<HiOutlineBuildingOffice2 className="w-5 h-5" />}
+              label="Total Rooms"
+              value={stats.total}
+              color="slate"
+            />
+            <StatsCard
+              icon={<HiOutlineCheckCircle className="w-5 h-5" />}
+              label="Available"
+              value={stats.available}
+              color="green"
+            />
+            <StatsCard
+              icon={<HiOutlineUserGroup className="w-5 h-5" />}
+              label="Occupied"
+              value={stats.occupied}
+              color="blue"
+            />
+            <StatsCard
+              icon={<HiOutlineWrenchScrewdriver className="w-5 h-5" />}
+              label="Maintenance"
+              value={stats.maintenance}
+              color="yellow"
+            />
+            <StatsCard
+              icon={<HiOutlineClock className="w-5 h-5" />}
+              label="Reserved"
+              value={stats.reserved}
+              color="purple"
             />
           </div>
-
-          {/* Filter Toggle */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`min-w-[140px] px-5 py-3.5 border rounded-xl flex items-center justify-center gap-2 font-medium transition-all ${
-              showFilters
-                ? 'bg-indigo-50 border-indigo-300 text-indigo-700 shadow-sm'
-                : 'border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
-            }`}
-          >
-            <HiOutlineAdjustmentsHorizontal className="w-5 h-5" />
-            <span>Filters</span>
-            <HiOutlineChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-          </button>
-
-          {/* View Toggle */}
-          <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden bg-white">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`px-4 py-3 transition-colors ${
-                viewMode === 'grid' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-gray-50'
-              }`}
-              title="Grid view"
-            >
-              <HiOutlineViewColumns className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`px-4 py-3 border-l border-gray-200 transition-colors ${
-                viewMode === 'list' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-500 hover:bg-gray-50'
-              }`}
-              title="List view"
-            >
-              <HiOutlineBars3 className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Refresh */}
-          <button
-            onClick={loadRooms}
-            className="p-3.5 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors group"
-            title="Refresh list"
-          >
-            <HiOutlineArrowPath className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
-          </button>
         </div>
 
-        {/* Expanded Filters */}
-        {showFilters && (
-          <div className="mt-6 pt-6 border-t border-gray-100">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Ward</label>
-                <select
+        {/* Search & Filters */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 mb-6">
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Search Bar */}
+            <div className="flex-1 relative">
+              <HiOutlineMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search rooms by number, ward, floor..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full"
+                >
+                  <HiOutlineXMark className="w-4 h-4 text-slate-400" />
+                </button>
+              )}
+            </div>
+
+            {/* Filter Toggle */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl border font-medium transition-all ${
+                showFilters || hasActiveFilters
+                  ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300'
+                  : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+              }`}
+            >
+              <HiOutlineFunnel className="w-5 h-5" />
+              Filters
+              {hasActiveFilters && (
+                <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+              )}
+            </button>
+
+            {/* View Toggle */}
+            <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-3 transition-colors ${
+                  viewMode === 'grid'
+                    ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                <HiOutlineViewColumns className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-3 border-l border-slate-200 dark:border-slate-700 transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                <HiOutlineListBullet className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Expanded Filters */}
+          {showFilters && (
+            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <FilterSelect
+                  label="Ward"
                   value={filters.ward}
                   onChange={(e) => setFilters({ ...filters, ward: e.target.value })}
-                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-300 bg-white text-gray-800"
-                >
-                  {wards.map(ward => (
-                    <option key={ward} value={ward}>
-                      {ward === 'all' ? 'All Wards' : ward}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Status</label>
-                <select
+                  options={uniqueWards}
+                  placeholder="All Wards"
+                />
+                <FilterSelect
+                  label="Status"
                   value={filters.status}
                   onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-300 bg-white text-gray-800"
-                >
-                  {statuses.map(s => (
-                    <option key={s} value={s}>
-                      {s === 'all' ? 'All Statuses' : s.charAt(0).toUpperCase() + s.slice(1)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Type</label>
-                <select
+                  options={roomStatuses}
+                  placeholder="All Statuses"
+                />
+                <FilterSelect
+                  label="Type"
                   value={filters.type}
                   onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-indigo-300 bg-white text-gray-800"
-                >
-                  {types.map(t => (
-                    <option key={t} value={t}>
-                      {t === 'all' ? 'All Types' : t.charAt(0).toUpperCase() + t.slice(1)}
-                    </option>
-                  ))}
-                </select>
+                  options={roomTypes}
+                  placeholder="All Types"
+                />
+                <FilterSelect
+                  label="Floor"
+                  value={filters.floor}
+                  onChange={(e) => setFilters({ ...filters, floor: e.target.value })}
+                  options={uniqueFloors}
+                  placeholder="All Floors"
+                />
               </div>
+              {hasActiveFilters && (
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={clearFilters}
+                    className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium"
+                  >
+                    Clear all filters
+                  </button>
+                </div>
+              )}
             </div>
+          )}
+        </div>
 
-            <div className="flex justify-end gap-3 mt-6">
-              <Button variant="ghost" size="sm" onClick={clearFilters}>
-                Clear
-              </Button>
-              <Button variant="primary" size="sm" onClick={() => setShowFilters(false)}>
-                Apply
-              </Button>
-            </div>
-
-            {/* Active filters pills */}
-            {(filters.ward !== 'all' || filters.status !== 'all' || filters.type !== 'all' || searchTerm) && (
-              <div className="mt-5 flex flex-wrap gap-2 text-sm">
-                <span className="text-gray-500 self-center">Active:</span>
-                {filters.ward !== 'all' && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium border border-indigo-100">
-                    Ward: {filters.ward}
-                    <button onClick={() => setFilters({ ...filters, ward: 'all' })}>
-                      <HiOutlineXMark className="w-3.5 h-3.5" />
-                    </button>
-                  </span>
-                )}
-                {filters.status !== 'all' && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium border border-indigo-100">
-                    Status: {filters.status}
-                    <button onClick={() => setFilters({ ...filters, status: 'all' })}>
-                      <HiOutlineXMark className="w-3.5 h-3.5" />
-                    </button>
-                  </span>
-                )}
-                {filters.type !== 'all' && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-medium border border-indigo-100">
-                    Type: {filters.type}
-                    <button onClick={() => setFilters({ ...filters, type: 'all' })}>
-                      <HiOutlineXMark className="w-3.5 h-3.5" />
-                    </button>
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Results count */}
-      <div className="flex items-center justify-between text-sm text-gray-600 dark:text-slate-400">
-        <p>
-          Showing <span className="font-semibold text-gray-900">{filteredRooms.length}</span> of{' '}
-          <span className="font-semibold text-gray-900">{rooms.length}</span> rooms
-        </p>
-        {(searchTerm || filters.ward !== 'all' || filters.status !== 'all' || filters.type !== 'all') && (
-          <button
-            onClick={clearFilters}
-            className="text-indigo-600 hover:text-indigo-800 font-medium"
-          >
-            Clear all
-          </button>
-        )}
-      </div>
-
-      {/* Rooms content */}
-      {filteredRooms.length === 0 ? (
-        <div className="rounded-2xl border border-gray-100 bg-white py-16 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
-          <div className="text-7xl mb-5 opacity-70">🏠</div>
-          <h3 className="mb-3 text-xl font-semibold text-gray-800 dark:text-slate-100">No rooms found</h3>
-          <p className="mx-auto max-w-md text-gray-600 dark:text-slate-400">
-            {searchTerm || filters.ward !== 'all' || filters.status !== 'all' || filters.type !== 'all'
-              ? 'Try adjusting your filters or search term'
-              : 'Start by adding your first room'}
+        {/* Results Info */}
+        <div className="flex items-center justify-between mb-4 text-sm text-slate-600 dark:text-slate-400">
+          <p>
+            Showing <span className="font-semibold text-slate-900 dark:text-white">{filteredRooms.length}</span> of{' '}
+            <span className="font-semibold text-slate-900 dark:text-white">{rooms.length}</span> rooms
           </p>
-    
         </div>
-      ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {filteredRooms.map(room => (
-            <RoomCard
-              key={room._id || room.id}
-              room={room}
-              onUpdate={loadRooms}
-              onDelete={handleDeleteRoom}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow dark:border-slate-700 dark:bg-slate-900">
-          <table className="min-w-full divide-y divide-gray-100">
-            <thead className="bg-gray-50/70">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Room</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ward</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Floor</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Occupancy</th>
-                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredRooms.map(room => (
-                <tr key={room._id || room.id} className="hover:bg-indigo-50/30 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    Room {room.roomNumber}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{room.ward || '—'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{room.floor || '—'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">{room.type || 'General'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-3 py-1 text-xs font-medium rounded-full ${
-                      room.status === 'available' ? 'bg-green-100 text-green-800 border border-green-200' :
-                      room.status === 'occupied' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                      room.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
-                      room.status === 'reserved' ? 'bg-purple-100 text-purple-800 border border-purple-200' :
-                      'bg-gray-100 text-gray-700 border border-gray-200'
-                    }`}>
-                      {room.status ? room.status.charAt(0).toUpperCase() + room.status.slice(1) : 'Available'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {room.currentOccupancy || 0} / {room.capacity || 1}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end gap-3">
-                      <button
-                        onClick={() => openDetailRoom(room)}
-                        className="text-indigo-600 hover:text-indigo-800"
-                      >
-                        View
-                      </button>
-                      <button
-                        onClick={() => openEditRoom(room)}
-                        className="text-gray-600 hover:text-gray-800"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => openDeleteRoom(room)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
 
-      {/* Add Room Modal */}
-      <Modal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        title="Add New Room"
-        size="lg"
-      >
+        {/* Room Display */}
+        {filteredRooms.length === 0 ? (
+          <EmptyState
+            hasFilters={hasActiveFilters}
+            onClearFilters={clearFilters}
+            onAddRoom={handleAddRoom}
+          />
+        ) : viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredRooms.map(room => (
+              <RoomCard
+                key={room._id || room.id}
+                room={room}
+                onView={handleViewRoom}
+                onEdit={handleEditRoom}
+                onDelete={handleDeleteClick}
+              />
+            ))}
+          </div>
+        ) : (
+          <RoomTable
+            rooms={filteredRooms}
+            onView={handleViewRoom}
+            onEdit={handleEditRoom}
+            onDelete={handleDeleteClick}
+          />
+        )}
+
+        {/* Modals */}
         <RoomForm
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
           onSuccess={handleRoomSuccess}
-          onCancel={() => setShowAddModal(false)}
+          room={null}
         />
-      </Modal>
 
-      {/* Edit Room Modal */}
-      <Modal
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        title="Edit Room"
-        size="lg"
-      >
         <RoomForm
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={handleRoomSuccess}
           room={selectedRoom}
-          onSuccess={handleRoomSuccess}
-          onCancel={() => setShowEditModal(false)}
         />
-      </Modal>
 
-      {/* Room Details Modal */}
-      <Modal
-        isOpen={showDetailModal}
-        onClose={() => setShowDetailModal(false)}
-        title="Room Details"
-        size="lg"
-      >
-        {selectedRoom && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">Room Number</label>
-                <p className="mt-1 text-lg font-medium text-gray-900">{selectedRoom.roomNumber}</p>
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">Ward</label>
-                <p className="mt-1 text-lg font-medium text-gray-900">{selectedRoom.ward}</p>
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">Floor</label>
-                <p className="mt-1 text-lg font-medium text-gray-900">{selectedRoom.floor || '—'}</p>
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">Status</label>
-                <p className="mt-1 text-lg font-medium text-gray-900 capitalize">{selectedRoom.status || 'available'}</p>
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">Capacity</label>
-                <p className="mt-1 text-lg font-medium text-gray-900">{selectedRoom.capacity || 1}</p>
-              </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">Current Occupancy</label>
-                <p className="mt-1 text-lg font-medium text-gray-900">{selectedRoom.currentOccupancy || 0}</p>
-              </div>
-            </div>
+        <RoomDetail
+          isOpen={showDetailModal}
+          onClose={() => setShowDetailModal(false)}
+          room={selectedRoom}
+          onEdit={() => {
+            setShowDetailModal(false)
+            handleEditRoom(selectedRoom)
+          }}
+          onDelete={() => {
+            setShowDetailModal(false)
+            handleDeleteClick(selectedRoom)
+          }}
+        />
 
-            {selectedRoom.amenities?.length > 0 && (
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">Amenities</label>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {selectedRoom.amenities.map((amenity, index) => (
-                    <span key={index} className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">
-                      {amenity}
-                    </span>
-                  ))}
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && selectedRoom && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in">
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <HiOutlineXMark className="w-8 h-8 text-red-500" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Delete Room</h3>
+                <p className="text-slate-600 dark:text-slate-400 mb-6">
+                  Are you sure you want to delete room{' '}
+                  <span className="font-semibold text-slate-900 dark:text-white">{selectedRoom.roomNumber}</span>?
+                  This action cannot be undone.
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteConfirm}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Delete Room
+                  </button>
                 </div>
               </div>
-            )}
-
-            {selectedRoom.notes && (
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">Notes</label>
-                <p className="mt-1 text-gray-700">{selectedRoom.notes}</p>
-              </div>
-            )}
+            </div>
           </div>
         )}
-      </Modal>
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        title="Delete Room"
-        size="sm"
-      >
-        <div className="text-center">
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
-            <HiOutlineXMark className="h-10 w-10 text-red-600" />
-          </div>
-          <h3 className="mb-2 text-lg font-semibold text-gray-900">Delete Room?</h3>
-          <p className="mb-6 text-sm text-gray-500">
-            Are you sure you want to delete <span className="font-medium text-gray-700">Room {selectedRoom?.roomNumber || ''}</span>? This action cannot be undone.
-          </p>
-          <div className="flex justify-center space-x-3">
-            <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              onClick={() => handleDeleteRoom(selectedRoom?._id)}
-            >
-              Delete Room
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Mobile FAB */}
-      <div className="lg:hidden fixed bottom-6 right-6 z-50">
-        <button
-          onClick={openAddRoom}
-          className="bg-indigo-600 text-white p-5 rounded-full shadow-2xl hover:bg-indigo-700 transition-all active:scale-95"
-        >
-          <HiOutlinePlus className="w-7 h-7" />
-        </button>
       </div>
     </div>
+  )
+}
+
+// Stats Card Component
+const StatsCard = ({ icon, label, value, color }) => {
+  const colorClasses = {
+    slate: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
+    green: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
+    blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+    yellow: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400',
+    purple: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+  }
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+      <div className="flex items-center gap-3">
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorClasses[color]}`}>
+          {icon}
+        </div>
+        <div>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Filter Select Component
+const FilterSelect = ({ label, value, onChange, options, placeholder }) => (
+  <div>
+    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{label}</label>
+    <select
+      value={value}
+      onChange={onChange}
+      className="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+    >
+      <option value="">{placeholder}</option>
+      {options.map(opt => (
+        <option key={opt} value={opt} className="capitalize">
+          {opt.replace('_', ' ')}
+        </option>
+      ))}
+    </select>
+  </div>
+)
+
+// Empty State Component
+const EmptyState = ({ hasFilters, onClearFilters, onAddRoom }) => (
+  <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-12 text-center">
+    <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
+      <HiOutlineHomeModern className="w-12 h-12 text-slate-400" />
+    </div>
+    <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
+      {hasFilters ? 'No matching rooms found' : 'No rooms yet'}
+    </h3>
+    <p className="text-slate-600 dark:text-slate-400 mb-6 max-w-md mx-auto">
+      {hasFilters
+        ? 'Try adjusting your filters or search criteria'
+        : 'Get started by adding your first room to the system'}
+    </p>
+    {hasFilters ? (
+      <button
+        onClick={onClearFilters}
+        className="inline-flex items-center gap-2 px-4 py-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors font-medium"
+      >
+        Clear Filters
+      </button>
+    ) : (
+      <button
+        onClick={onAddRoom}
+        className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
+      >
+        <HiOutlinePlus className="w-5 h-5" />
+        Add First Room
+      </button>
+    )}
+  </div>
+)
+
+// Room Table Component
+const RoomTable = ({ rooms, onView, onEdit, onDelete }) => (
+  <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead>
+          <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
+            <th className="text-left p-4 text-sm font-semibold text-slate-600 dark:text-slate-400">Room</th>
+            <th className="text-left p-4 text-sm font-semibold text-slate-600 dark:text-slate-400">Ward</th>
+            <th className="text-left p-4 text-sm font-semibold text-slate-600 dark:text-slate-400">Floor</th>
+            <th className="text-left p-4 text-sm font-semibold text-slate-600 dark:text-slate-400">Type</th>
+            <th className="text-left p-4 text-sm font-semibold text-slate-600 dark:text-slate-400">Status</th>
+            <th className="text-left p-4 text-sm font-semibold text-slate-600 dark:text-slate-400">Occupancy</th>
+            <th className="text-right p-4 text-sm font-semibold text-slate-600 dark:text-slate-400">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+          {rooms.map(room => (
+            <tr key={room._id || room.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+              <td className="p-4 text-sm font-medium text-slate-900 dark:text-white">{room.roomNumber}</td>
+              <td className="p-4 text-sm text-slate-600 dark:text-slate-400">{room.ward || '—'}</td>
+              <td className="p-4 text-sm text-slate-600 dark:text-slate-400">{room.floor || '—'}</td>
+              <td className="p-4 text-sm text-slate-600 dark:text-slate-400 capitalize">{room.type}</td>
+              <td className="p-4">
+                <StatusBadge status={room.status} />
+              </td>
+              <td className="p-4 text-sm text-slate-600 dark:text-slate-400">
+                {room.currentOccupancy || 0} / {room.capacity || 1}
+              </td>
+              <td className="p-4">
+                <div className="flex items-center justify-end gap-2">
+                  <ActionButton onClick={() => onView(room)} label="View" variant="ghost" />
+                  <ActionButton onClick={() => onEdit(room)} label="Edit" variant="ghost" />
+                  <ActionButton onClick={() => onDelete(room)} label="Delete" variant="danger" />
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)
+
+// Status Badge Component
+const StatusBadge = ({ status }) => {
+  const styles = {
+    available: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    occupied: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    maintenance: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+    reserved: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+  }
+
+  return (
+    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium capitalize ${styles[status] || styles.available}`}>
+      {status}
+    </span>
+  )
+}
+
+// Action Button Component
+const ActionButton = ({ onClick, label, variant }) => {
+  const variants = {
+    ghost: 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700',
+    danger: 'text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20'
+  }
+
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${variants[variant]}`}
+    >
+      {label}
+    </button>
   )
 }
 

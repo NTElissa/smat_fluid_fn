@@ -1,3 +1,4 @@
+// services/roomService.js
 import api from './api'
 
 // Get all rooms with filters
@@ -20,6 +21,7 @@ export const getRoom = async (id) => {
   }
 }
 
+// Helper to normalize room payload
 const normalizeRoomPayload = (roomData = {}) => {
   const amenities = Array.isArray(roomData.amenities)
     ? roomData.amenities.map((item) => item?.trim()).filter(Boolean)
@@ -27,33 +29,35 @@ const normalizeRoomPayload = (roomData = {}) => {
       ? roomData.amenities.split(',').map((item) => item.trim()).filter(Boolean)
       : []
 
-  // Strip assignedStaff down to { user, role } pairs the backend expects
   const assignedStaff = Array.isArray(roomData.assignedStaff)
     ? roomData.assignedStaff
         .filter((entry) => entry?.user && entry?.role)
         .map((entry) => ({
-          user: typeof entry.user === 'object' ? entry.user._id : entry.user,
+          user: typeof entry.user === 'object' ? entry.user._id || entry.user.id : entry.user,
           role: entry.role
         }))
     : undefined
 
   const payload = {
-    ...roomData,
-    capacity: Number(roomData.capacity ?? 1),
-    currentOccupancy: Number(roomData.currentOccupancy ?? 0),
+    roomNumber: roomData.roomNumber,
+    ward: roomData.ward,
+    floor: roomData.floor || '',
+    capacity: Number(roomData.capacity) || 1,
+    currentOccupancy: Number(roomData.currentOccupancy) || 0,
+    status: roomData.status || 'available',
+    type: roomData.type || 'general',
     amenities,
+    notes: roomData.notes || '',
   }
 
   if (assignedStaff) {
     payload.assignedStaff = assignedStaff
-  } else {
-    delete payload.assignedStaff
   }
 
   return payload
 }
 
-// Create new room (admin can include assignedStaff in the payload)
+// Create new room (admin can include assignedStaff)
 export const createRoom = async (roomData) => {
   try {
     const formattedData = normalizeRoomPayload(roomData)
@@ -64,7 +68,7 @@ export const createRoom = async (roomData) => {
   }
 }
 
-// Update room (general fields only — does NOT touch assignedStaff)
+// Update room (general fields only)
 export const updateRoom = async (id, roomData) => {
   try {
     const formattedData = normalizeRoomPayload(roomData)
@@ -76,14 +80,13 @@ export const updateRoom = async (id, roomData) => {
   }
 }
 
-// Assign/replace staff on an existing room — admin only, hits the
-// dedicated PUT /rooms/:id/assign-staff endpoint
+// Assign/replace staff on room (admin only)
 export const assignRoomStaff = async (id, assignedStaff) => {
   try {
     const cleaned = (assignedStaff || [])
       .filter((entry) => entry?.user && entry?.role)
       .map((entry) => ({
-        user: typeof entry.user === 'object' ? entry.user._id : entry.user,
+        user: typeof entry.user === 'object' ? entry.user._id || entry.user.id : entry.user,
         role: entry.role
       }))
 
@@ -103,5 +106,16 @@ export const deleteRoom = async (id) => {
     return response.data
   } catch (error) {
     throw error.response?.data || { message: 'Failed to delete room' }
+  }
+}
+
+
+// Get available rooms
+export const getAvailableRooms = async (params = {}) => {
+  try {
+    const response = await api.get('/rooms/available', { params })
+    return response.data
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch available rooms' }
   }
 }

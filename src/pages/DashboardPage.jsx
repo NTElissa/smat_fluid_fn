@@ -9,7 +9,10 @@ import {
   HiOutlineChartBar,
   HiOutlineClock,
   HiOutlineArrowUp,
-  HiOutlineArrowDown
+  HiOutlineArrowDown,
+  HiOutlineSparkles,
+  HiOutlineHome,
+  HiOutlineShieldCheck
 } from 'react-icons/hi2'
 import StatsCard from '../components/Dashboard/StatsCard'
 import AlertCard from '../components/Dashboard/AlertCard'
@@ -39,6 +42,7 @@ const DashboardPage = () => {
     totalBeds: 120,
     staffOnDuty: 0,
   })
+  const [summaryCards, setSummaryCards] = useState([])
   const [monitors, setMonitors] = useState([])
   const [activities, setActivities] = useState([])
   const [chartData, setChartData] = useState([])
@@ -78,6 +82,32 @@ const DashboardPage = () => {
           totalBeds: patientStats.totalBeds || 120,
           staffOnDuty: dashData.staffOnDuty || dashData.totalUsers || 0,
         })
+
+        const bedsAvailable = patientStats.bedsAvailable || 0
+
+        setSummaryCards([
+          {
+            title: 'Rooms Ready',
+            value: Math.max(bedsAvailable, 0),
+            icon: HiOutlineHome,
+            tone: 'bg-emerald-50 text-emerald-600',
+            detail: 'Available ward capacity',
+          },
+          {
+            title: 'Critical Focus',
+            value: dashData.activeAlerts || 0,
+            icon: HiOutlineShieldCheck,
+            tone: 'bg-rose-50 text-rose-600',
+            detail: 'Alerts requiring attention',
+          },
+          {
+            title: 'On Duty',
+            value: dashData.staffOnDuty || dashData.totalUsers || 0,
+            icon: HiOutlineUserGroup,
+            tone: 'bg-sky-50 text-sky-600',
+            detail: 'Active care team members',
+          },
+        ])
 
         // Handle different response structures for monitors
         let monitorsData = []
@@ -164,6 +194,25 @@ const DashboardPage = () => {
         </div>
       </div>
 
+      <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-500 p-6 text-white shadow-lg shadow-indigo-900/20">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-sm font-medium backdrop-blur">
+              <HiOutlineSparkles className="h-4 w-4" />
+              Executive overview
+            </div>
+            <h2 className="text-2xl font-semibold">Care operations are running smoothly</h2>
+            <p className="mt-2 max-w-2xl text-sm text-indigo-100">
+              Monitor occupancy, urgent alerts, and team coverage from one concise command center.
+            </p>
+          </div>
+          <div className="rounded-2xl bg-white/15 px-4 py-3 text-sm backdrop-blur">
+            <p className="text-indigo-100">Today</p>
+            <p className="text-xl font-semibold">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+          </div>
+        </div>
+      </div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard 
@@ -194,6 +243,22 @@ const DashboardPage = () => {
           color="info" 
           subtitle="Active team members" 
         />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {summaryCards.map((card) => {
+          const Icon = card.icon
+          return (
+            <div key={card.title} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className={`inline-flex rounded-xl p-2 ${card.tone}`}>
+                <Icon className="h-5 w-5" />
+              </div>
+              <p className="mt-3 text-sm text-slate-500">{card.title}</p>
+              <p className="text-2xl font-semibold text-slate-900">{card.value}</p>
+              <p className="text-sm text-slate-500">{card.detail}</p>
+            </div>
+          )
+        })}
       </div>
 
       {/* Staff Breakdown */}

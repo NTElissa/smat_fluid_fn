@@ -60,7 +60,8 @@ const UsersCard = () => {
     try {
       setLoading(true)
       const response = await getUsers()
-      const usersData = response.data || []
+      const payload = response?.data || response || {}
+      const usersData = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : []
       setUsers(usersData)
       
       // Calculate stats

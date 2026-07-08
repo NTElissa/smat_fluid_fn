@@ -29,8 +29,8 @@ const RoomDetail = () => {
       const response = await getRoom(id)
       const roomData = response.data || response
       setRoom(roomData)
-    } catch (error) {
-      toast.error('Failed to load room details')
+    } catch {
+      // toast.error('Failed to load room details')
       navigate('/rooms')
     } finally {
       setLoading(false)
@@ -188,6 +188,24 @@ const RoomDetail = () => {
           </div>
         </div>
       )}
+
+      <div className="bg-white rounded-xl shadow-sm p-6 dark:border-slate-700 dark:bg-slate-900">
+        <h3 className="font-semibold text-gray-900 mb-4 flex items-center space-x-2">
+          <HiOutlineClipboard className="w-5 h-5 text-indigo-600" />
+          <span>Assigned Staff</span>
+        </h3>
+        {room.assignedStaff?.length ? (
+          <div className="flex flex-wrap gap-2">
+            {room.assignedStaff.map((entry) => (
+              <span key={entry._id || entry.user?._id} className="rounded-full bg-indigo-50 px-3 py-1 text-sm text-indigo-700">
+                {entry.user?.firstName || 'Staff'} {entry.user?.lastName || ''} • {entry.role}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">No staff assigned to this room yet.</p>
+        )}
+      </div>
 
       {room.notes && (
         <div className="bg-white rounded-xl shadow-sm p-6 dark:border-slate-700 dark:bg-slate-900">
