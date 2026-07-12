@@ -10,8 +10,12 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (isAuthenticated && token) {
-      const newSocket = io(import.meta.env.VITE_SOCKET_URL, {
-        auth: { token }
+      const socketUrl = import.meta.env.VITE_SOCKET_URL || window.location.origin
+      const newSocket = io(socketUrl, {
+        auth: { token },
+        transports: ['websocket', 'polling'],
+        withCredentials: true,
+        path: '/socket.io'
       })
 
       newSocket.on('connect', () => {
